@@ -51,34 +51,11 @@ var InitDemo = function() {
     gl.cullFace(gl.BACK);
 
     // create shaders
-    var vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-
-    gl.shaderSource(vertexShader, vertexShaderText);
-    gl.shaderSource(fragmentShader, fragmentShaderText);
-
-    gl.compileShader(vertexShader);
-    gl.compileShader(fragmentShader);
-
-    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-        console.error('Error compiling vertex shader!', gl.getShaderInfoLog(vertexShader));
-        return;
-    }
-
-    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-        console.error('Error compiling fragment shader!', gl.getShaderInfoLog(fragmentShader));
-        return;
-    }
+    var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderText);
+    var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
 
     // create program
-    var program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('Error linking program!', gl.getProgramInfoLog(program));
-        return;
-    }
+    var program = createProgram(gl, vertexShader, fragmentShader);
 
     // create buffer
     var boxVertices = 
@@ -227,3 +204,30 @@ var InitDemo = function() {
     };
     requestAnimationFrame(loop);
 };
+
+function createShader(gl, type, source) {
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    var success = gl.getShaderProgram(shader, gl.COMPILE_STATUS);
+    if (success) {
+        return shader;
+    }
+
+    console.log(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+    var program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (success) {
+        return program;
+    }
+
+    console.log(gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+}
