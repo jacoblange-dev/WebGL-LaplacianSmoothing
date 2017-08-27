@@ -34,6 +34,8 @@ void main()
 
 
 var InitDemo = function() {
+    loadBunnyObj();
+
     var canvas = document.getElementById('webgl-surface');
     var gl = canvas.getContext('webgl');
 
@@ -59,7 +61,7 @@ var InitDemo = function() {
 
     // create buffer
     var boxVertices = 
-    [ // X, Y, Z           R, G, B
+    [ // X, Y, Z           U,V
         // Top
         -1.0, 1.0, -1.0,   0, 0,
         -1.0, 1.0, 1.0,    0, 1,
@@ -230,4 +232,40 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
     console.log(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
+}
+
+function loadBunnyObj() {
+    var bunny = {};
+    bunny.vertices = [];
+    bunny.indices = [];
+    var request = new XMLHttpRequest();
+	request.open("GET", "bunny.obj", true);
+	request.onreadystatechange = function() {
+        if (request.status == 200 && request.readyState == 4) {
+
+            var lines = request.responseText.split("\n");
+            for (var i = 0; i < lines.length; i++)
+            {
+                if (lines[i][0] == "#")
+                    continue;
+
+                var line = lines[i].split(" ");
+                if (line[0] == "v")
+                {
+                    line.shift();
+                    bunny.vertices.push(line);
+                }
+                else if (line[0] == "f")
+                {
+                    line.shift();
+                    bunny.indices.push(line);
+                }
+            }
+            alert(bunny.vertices); 
+            alert(bunny.indices);
+        }
+    }
+    request.send();
+    
+    return bunny;
 }
