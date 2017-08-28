@@ -3,9 +3,6 @@ var vertexShaderText =
 precision mediump float;
 
 attribute vec3 vertPosition;
-attribute vec2 vertTexCoord;
-
-varying vec2 fragTexCoord;
 
 uniform mat4 mWorld;
 uniform mat4 mView;
@@ -13,7 +10,6 @@ uniform mat4 mProj;
 
 void main()
 {
-    fragTexCoord = vertTexCoord;
     gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);
 }
 `;
@@ -22,20 +18,47 @@ var fragmentShaderText =
 `
 precision mediump float;
 
-varying vec2 fragTexCoord;
-
-uniform sampler2D sampler;
-
 void main()
 {
-    gl_FragColor = texture2D(sampler, fragTexCoord);
+    gl_FragColor = vec4(0.7, 0.7, 0.7, 1.0);
 }
 `;
+var bunny = {};
+var InitDemo = function()
+{
+    loadBunnyObj(function(objText) {
+        bunny.vertices = [];
+        bunny.indices = [];
+        var lines = objText.split("\n");
+        for (var i = 0; i < lines.length; i++)
+        {
+            if (lines[i][0] == "#")
+                continue;
 
+            var line = lines[i].split(" ");
+            if (line[0] == "v")
+            {
+                line.shift();
+                for (var j = 0; j < line.length; j++)
+                {
+                    bunny.vertices.push(line[j]);
+                }
+            }
+            else if (line[0] == "f")
+            {
+                line.shift();
+                for (var j = 0; j < line.length; j++)
+                {
+                    bunny.indices.push(line[j] - 1);
+                }
+            }
+        }
 
-var InitDemo = function() {
-    loadBunnyObj();
+        runScene(bunny);
+    });
+};
 
+var runScene = function(bunnyMesh) {
     var canvas = document.getElementById('webgl-surface');
     var gl = canvas.getContext('webgl');
 
@@ -59,80 +82,14 @@ var InitDemo = function() {
     // create program
     var program = createProgram(gl, vertexShader, fragmentShader);
 
-    // create buffer
-    var boxVertices = 
-    [ // X, Y, Z           U,V
-        // Top
-        -1.0, 1.0, -1.0,   0, 0,
-        -1.0, 1.0, 1.0,    0, 1,
-        1.0, 1.0, 1.0,     1, 1,
-        1.0, 1.0, -1.0,    1, 0,
-
-        // Left
-        -1.0, 1.0, 1.0,    0, 0,
-        -1.0, -1.0, 1.0,   1, 0,
-        -1.0, -1.0, -1.0,  1, 1,
-        -1.0, 1.0, -1.0,   0, 1,
-
-        // Right
-        1.0, 1.0, 1.0,    1, 1,
-        1.0, -1.0, 1.0,   0, 1,
-        1.0, -1.0, -1.0,  0, 0,
-        1.0, 1.0, -1.0,   1, 0,
-
-        // Front
-        1.0, 1.0, 1.0,    1, 1,
-        1.0, -1.0, 1.0,    1, 0,
-        -1.0, -1.0, 1.0,    0, 0,
-        -1.0, 1.0, 1.0,    0, 1,
-
-        // Back
-        1.0, 1.0, -1.0,    0, 0,
-        1.0, -1.0, -1.0,    0, 1,
-        -1.0, -1.0, -1.0,    1, 1,
-        -1.0, 1.0, -1.0,    1, 0,
-
-        // Bottom
-        -1.0, -1.0, -1.0,   1, 1,
-        -1.0, -1.0, 1.0,    1, 0,
-        1.0, -1.0, 1.0,     0, 0,
-        1.0, -1.0, -1.0,    0, 1,
-    ];
-
-    var boxIndices =
-    [
-        // Top
-        0, 1, 2,
-        0, 2, 3,
-
-        // Left
-        5, 4, 6,
-        6, 4, 7,
-
-        // Right
-        8, 9, 10,
-        8, 10, 11,
-
-        // Front
-        13, 12, 14,
-        15, 14, 12,
-
-        // Back
-        16, 17, 18,
-        16, 18, 19,
-
-        // Bottom
-        21, 20, 22,
-        22, 20, 23
-    ];
-
+    // create buffers
     var boxVertexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bunnyMesh.vertices), gl.STATIC_DRAW);
 
     var boxIndexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(bunnyMesh.indices), gl.STATIC_DRAW);
 
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     gl.vertexAttribPointer(
@@ -140,33 +97,10 @@ var InitDemo = function() {
         3,
         gl.FLOAT,
         gl.FALSE,
-        5 * Float32Array.BYTES_PER_ELEMENT,
+        3 * Float32Array.BYTES_PER_ELEMENT,
         0
     );
     gl.enableVertexAttribArray(positionAttribLocation);
-
-    var texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
-    gl.vertexAttribPointer(
-        texCoordAttribLocation,
-        2,
-        gl.FLOAT,
-        gl.FALSE,
-        5 * Float32Array.BYTES_PER_ELEMENT,
-        3 * Float32Array.BYTES_PER_ELEMENT
-    );
-    gl.enableVertexAttribArray(texCoordAttribLocation);
-
-    // create texture
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, document.getElementById('panda'));
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
 
     gl.useProgram(program);
     var matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
@@ -198,9 +132,7 @@ var InitDemo = function() {
         gl.clearColor(0.75, 0.85, 0.8, 1.0);
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, bunnyMesh.indices.length, gl.UNSIGNED_SHORT, 0);
 
         requestAnimationFrame(loop);
     };
@@ -234,38 +166,13 @@ function createProgram(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
 }
 
-function loadBunnyObj() {
-    var bunny = {};
-    bunny.vertices = [];
-    bunny.indices = [];
+function loadBunnyObj(callback) {
     var request = new XMLHttpRequest();
-	request.open("GET", "bunny.obj", true);
-	request.onreadystatechange = function() {
+    request.open("GET", "bunny.obj", true);
+    request.onreadystatechange = function() {
         if (request.status == 200 && request.readyState == 4) {
-
-            var lines = request.responseText.split("\n");
-            for (var i = 0; i < lines.length; i++)
-            {
-                if (lines[i][0] == "#")
-                    continue;
-
-                var line = lines[i].split(" ");
-                if (line[0] == "v")
-                {
-                    line.shift();
-                    bunny.vertices.push(line);
-                }
-                else if (line[0] == "f")
-                {
-                    line.shift();
-                    bunny.indices.push(line);
-                }
-            }
-            alert(bunny.vertices); 
-            alert(bunny.indices);
+            callback(request.responseText);
         }
     }
     request.send();
-    
-    return bunny;
 }
