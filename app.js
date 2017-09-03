@@ -13,7 +13,7 @@ uniform mat4 mProj;
 
 void main()
 {
-    fragNormal = vertNormal;
+    fragNormal = (mWorld * vec4(vertNormal, 0.0)).xyz;
     gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);
 }
 `;
@@ -26,7 +26,15 @@ varying vec3 fragNormal;
 
 void main()
 {
-    gl_FragColor = vec4(fragNormal, 1.0);
+    vec3 ambientLightIntensity = vec3(0.2, 0.2, 0.2);
+    vec3 sunlightIntensity = vec3(0.9, 0.9, 0.9);
+    vec3 sunlightDirection = normalize(vec3(1.0, 1.0, -2.0));
+
+    vec3 color = vec3(0.7, 0.7, 0.7);
+
+    vec3 lightIntensity = ambientLightIntensity + sunlightIntensity * max(dot(fragNormal, sunlightDirection), 0.0);
+
+    gl_FragColor = vec4(color *  lightIntensity, 1.0);
 }
 `;
 
@@ -144,7 +152,7 @@ var runScene = function(bunnyMesh) {
     var projMatrix = new Float32Array(16);
 
     mat4.identity(worldMatrix);
-    mat4.lookAt(viewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0]);
+    mat4.lookAt(viewMatrix, [0, 3, -8], [0, 1, 0], [0, 1, 0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.width / canvas.height, 0.1, 1000.0);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
