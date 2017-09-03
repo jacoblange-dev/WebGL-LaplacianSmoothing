@@ -51,12 +51,22 @@ var InitDemo = function()
                 bunny.vertices.push(line[1]);
                 bunny.vertices.push(line[2]);
             }
+            else if (line[0] == "vn")
+            {
+                line.shift();
+                bunny.normals.push(line[0]);
+                bunny.normals.push(line[1]);
+                bunny.normals.push(line[2]);
+            }
             else if (line[0] == "f")
             {
                 line.shift();
-                bunny.indices.push(line[0] - 1);
-                bunny.indices.push(line[1] - 1);
-                bunny.indices.push(line[2] - 1);
+                
+                for (var j = 0; j < line.length; j++)
+                {
+                    var index = line[j].split("/");
+                    bunny.indices.push(index[0] - 1);
+                }
             }
         }
         runScene(bunny);
@@ -96,9 +106,9 @@ var runScene = function(bunnyMesh) {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(bunnyMesh.indices), gl.STATIC_DRAW);
     
-    // var boxNormalBufferObject = gl.createBuffer();
-    // gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
-    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bunnyMesh.indexedNormals), gl.STATIC_DRAW);
+    var boxNormalBufferObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bunnyMesh.normals), gl.STATIC_DRAW);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);    
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
@@ -112,17 +122,17 @@ var runScene = function(bunnyMesh) {
     );
     gl.enableVertexAttribArray(positionAttribLocation);
 
-    // gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
-    // var vertNormalAttribLocation = gl.getAttribLocation(program, 'vertNormal');
-    // gl.vertexAttribPointer(
-    //     vertNormalAttribLocation,
-    //     3,
-    //     gl.FLOAT,
-    //     gl.TRUE,
-    //     3 * Float32Array.BYTES_PER_ELEMENT,
-    //     0
-    // );
-    // gl.enableVertexAttribArray(vertNormalAttribLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
+    var vertNormalAttribLocation = gl.getAttribLocation(program, 'vertNormal');
+    gl.vertexAttribPointer(
+        vertNormalAttribLocation,
+        3,
+        gl.FLOAT,
+        gl.TRUE,
+        3 * Float32Array.BYTES_PER_ELEMENT,
+        0
+    );
+    gl.enableVertexAttribArray(vertNormalAttribLocation);
 
     gl.useProgram(program);
     var matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
@@ -190,7 +200,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 function loadBunnyObj(callback) {
     var request = new XMLHttpRequest();
-    request.open("GET", "bunny3.obj", true);
+    request.open("GET", "bunny.obj", true);
     request.onload = function() {
         if (request.status == 200 && request.readyState == 4) {
             callback(request.responseText);
