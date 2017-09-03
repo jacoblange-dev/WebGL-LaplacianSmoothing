@@ -3,6 +3,9 @@ var vertexShaderText =
 precision mediump float;
 
 attribute vec3 vertPosition;
+attribute vec3 vertNormal;
+
+varying vec3 fragNormal;
 
 uniform mat4 mWorld;
 uniform mat4 mView;
@@ -10,6 +13,7 @@ uniform mat4 mProj;
 
 void main()
 {
+    fragNormal = vertNormal;
     gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);
 }
 `;
@@ -18,9 +22,11 @@ var fragmentShaderText =
 `
 precision mediump float;
 
+varying vec3 fragNormal;
+
 void main()
 {
-    gl_FragColor = vec4(0.7, 0.7, 0.7, 1.0);
+    gl_FragColor = vec4(fragNormal, 1.0);
 }
 `;
 
@@ -30,31 +36,29 @@ var InitDemo = function()
     loadBunnyObj(function(objText) {
         bunny.vertices = [];
         bunny.indices = [];
+        bunny.normals = [];
         var lines = objText.split("\n");
         for (var i = 0; i < lines.length; i++)
         {
             if (lines[i][0] == "#")
                 continue;
 
-            var line = lines[i].split(" ");
+            var line = lines[i].split(/\s+/);
             if (line[0] == "v")
             {
                 line.shift();
-                for (var j = 0; j < line.length; j++)
-                {
-                    bunny.vertices.push(line[j]);
-                }
+                bunny.vertices.push(line[0]);
+                bunny.vertices.push(line[1]);
+                bunny.vertices.push(line[2]);
             }
             else if (line[0] == "f")
             {
                 line.shift();
-                for (var j = 0; j < line.length; j++)
-                {
-                    bunny.indices.push(line[j] - 1);
-                }
+                bunny.indices.push(line[0] - 1);
+                bunny.indices.push(line[1] - 1);
+                bunny.indices.push(line[2] - 1);
             }
         }
-
         runScene(bunny);
     });
 };
@@ -91,7 +95,12 @@ var runScene = function(bunnyMesh) {
     var boxIndexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(bunnyMesh.indices), gl.STATIC_DRAW);
+    
+    // var boxNormalBufferObject = gl.createBuffer();
+    // gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bunnyMesh.indexedNormals), gl.STATIC_DRAW);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);    
     var positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     gl.vertexAttribPointer(
         positionAttribLocation,
@@ -103,6 +112,18 @@ var runScene = function(bunnyMesh) {
     );
     gl.enableVertexAttribArray(positionAttribLocation);
 
+    // gl.bindBuffer(gl.ARRAY_BUFFER, boxNormalBufferObject);
+    // var vertNormalAttribLocation = gl.getAttribLocation(program, 'vertNormal');
+    // gl.vertexAttribPointer(
+    //     vertNormalAttribLocation,
+    //     3,
+    //     gl.FLOAT,
+    //     gl.TRUE,
+    //     3 * Float32Array.BYTES_PER_ELEMENT,
+    //     0
+    // );
+    // gl.enableVertexAttribArray(vertNormalAttribLocation);
+
     gl.useProgram(program);
     var matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
     var matViewUniformLocation = gl.getUniformLocation(program, 'mView');
@@ -113,7 +134,7 @@ var runScene = function(bunnyMesh) {
     var projMatrix = new Float32Array(16);
 
     mat4.identity(worldMatrix);
-    mat4.lookAt(viewMatrix, [0, 0, -1], [0, 0, 0], [0, 1, 0]);
+    mat4.lookAt(viewMatrix, [0, 0, -8], [0, 0, 0], [0, 1, 0]);
     mat4.perspective(projMatrix, glMatrix.toRadian(45), canvas.width / canvas.height, 0.1, 1000.0);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
@@ -169,8 +190,8 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 function loadBunnyObj(callback) {
     var request = new XMLHttpRequest();
-    request.open("GET", "bunny.obj", true);
-    request.onreadystatechange = function() {
+    request.open("GET", "bunny3.obj", true);
+    request.onload = function() {
         if (request.status == 200 && request.readyState == 4) {
             callback(request.responseText);
         }
