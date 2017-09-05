@@ -221,32 +221,35 @@ function laplacianFilter(vertices, indices, iterations)
 {
     var network = buildNetwork(indices);
 
+    var newVertices = vertices;
     for (var i = 0; i < iterations; i++)
-        vertices = laplacianFilterStep(network, vertices, indices);
+        newVertices = laplacianFilterStep(network, newVertices, indices);
 
-    return vertices;
+    return newVertices;
 }
 
 function laplacianFilterStep(network, vertices, indices)
 {
     var filteredVertices = [];
 
-    for (var i = 0; i < vertices.length / 3; i++)
+    var numberOfVertices = vertices.length / 3;
+    for (var i = 0; i < vertices.length; i += 3)
     {
-        var connections = network[i].adjacentIndices;
+        var vertexNumber = i / 3;
+        var connections = network[vertexNumber].adjacentIndices;
         var newVertex = vec3.create();
 
         for (var j = 0; j < connections.length; j++)
         {
-            var currentVertex = vec3.fromValues(connections[j], connections[j+1], connections[j+2]);
+            var index = connections[j];
+            var currentVertex = vec3.fromValues(vertices[index], vertices[index + 1], vertices[index + 2]);
+
             vec3.add(newVertex, newVertex, currentVertex);
         }
 
-        var countVec3 = vec3.fromValues(connections.length, connections.length, connections.length);
-        vec3.div(newVertex, newVertex, countVec3);
-        filteredVertices[i]     = newVertex[0];
-        filteredVertices[i + 1] = newVertex[1];
-        filteredVertices[i + 2] = newVertex[2];
+        filteredVertices[i]     = newVertex[0] / connections.length;
+        filteredVertices[i + 1] = newVertex[1] / connections.length;
+        filteredVertices[i + 2] = newVertex[2] / connections.length;
     }
 
     return filteredVertices;
