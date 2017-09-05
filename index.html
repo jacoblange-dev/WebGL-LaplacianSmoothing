@@ -2,12 +2,13 @@
     <head>
         <Title>WebGL</Title>
     </head>
-    <body onload="InitDemo()">
+    <body onload="initDemo()">
         <canvas id="webgl-surface" width="800" height="800">
             Your browser does not support html5
         </canvas>
         <br />
-        <i>Demo is above this line</i>
+        <br />
+        <button onclick="runSmoothing()">Run Smoothing</button>
         <script src="app.js"></script>
         <script src="gl-matrix.js"></script>
     </body>

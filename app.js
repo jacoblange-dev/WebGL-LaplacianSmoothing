@@ -39,7 +39,9 @@ void main()
 `;
 
 var bunny = {};
-var InitDemo = function()
+var stopDemo = false;
+
+var initDemo = function()
 {
     loadBunnyObj(function(objText) {
         bunny.vertices = [];
@@ -82,6 +84,7 @@ var InitDemo = function()
 };
 
 var runScene = function(bunnyMesh) {
+    stopDemo = false;
     var canvas = document.getElementById('webgl-surface');
     var gl = canvas.getContext('webgl');
 
@@ -174,7 +177,8 @@ var runScene = function(bunnyMesh) {
 
         gl.drawElements(gl.TRIANGLES, bunnyMesh.indices.length, gl.UNSIGNED_SHORT, 0);
 
-        requestAnimationFrame(loop);
+        if (!stopDemo)
+            requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
 };
@@ -215,6 +219,13 @@ function loadBunnyObj(callback) {
         }
     }
     request.send();
+}
+
+function runSmoothing()
+{
+    bunny.vertices = laplacianFilter(bunny.vertices, bunny.indices, 1);
+    stopDemo = true;
+    runScene(bunny);
 }
 
 function laplacianFilter(vertices, indices, iterations)
