@@ -216,3 +216,71 @@ function loadBunnyObj(callback) {
     }
     request.send();
 }
+
+function laplacianFilter(vertices, indices, iterations)
+{
+    var network = buildNetwork(indices);
+
+    for (var i = 0; i < iterations; i++)
+        vertices = laplacianFilterStep(network, vertices, indices);
+
+    return vertices;
+}
+
+function laplacianFilterStep(network, vertices, indices)
+{
+    var filteredVertices = [];
+
+    for (var i = 0; i < vertices.length / 3; i++)
+    {
+        var connections = network[i].adjacentIndices;
+        var newVertex = vec3.create();
+
+        for (var j = 0; j < connections.length; j++)
+        {
+            var currentVertex = vec3.fromValues(connections[j], connections[j+1], connections[j+2]);
+            vec3.add(newVertex, newVertex, currentVertex);
+        }
+
+        var countVec3 = vec3.fromValues(connections.length, connections.length, connections.length);
+        vec3.div(newVertex, newVertex, countVec3);
+        filteredVertices[i]     = newVertex[0];
+        filteredVertices[i + 1] = newVertex[1];
+        filteredVertices[i + 2] = newVertex[2];
+    }
+
+    return filteredVertices;
+}
+
+
+function buildNetwork(indices)
+{
+    var network = {};
+
+    for (var i = 0; i < indices.length; i += 3)
+    {
+        var indexA = indices[i];
+        var indexB = indices[i + 1];
+        var indexC = indices[i + 2];
+
+        if (!network.hasOwnProperty(indexA))
+            network[indexA] = { adjacentIndices: [] };
+
+        if (!network.hasOwnProperty(indexB))
+            network[indexB] = { adjacentIndices: [] };
+
+        if (!network.hasOwnProperty(indexC))
+            network[indexC] = { adjacentIndices: [] };
+
+        network[indexA].adjacentIndices.push(indexB);
+        network[indexA].adjacentIndices.push(indexC);
+
+        network[indexB].adjacentIndices.push(indexA);
+        network[indexB].adjacentIndices.push(indexC);
+
+        network[indexC].adjacentIndices.push(indexA);
+        network[indexC].adjacentIndices.push(indexB);
+    }
+
+    return network;
+}
