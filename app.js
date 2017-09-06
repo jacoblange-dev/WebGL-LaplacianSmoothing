@@ -43,7 +43,8 @@ var stopDemo = false;
 
 var initDemo = function()
 {
-    loadBunnyObj(function(objText) {
+    loadBunnyObj(function(objText) 
+    {
         bunny.vertices = [];
         bunny.indices = [];
         bunny.normals = [];
@@ -83,12 +84,14 @@ var initDemo = function()
     });
 };
 
-var runScene = function(bunnyMesh) {
+var runScene = function(bunnyMesh) 
+{
     stopDemo = false;
     var canvas = document.getElementById('webgl-surface');
     var gl = canvas.getContext('webgl');
 
-    if (!gl) {
+    if (!gl) 
+    {
         console.log('could not  get webgl surface');
         alert('Your browser does not support WebGL');
         return;
@@ -101,14 +104,11 @@ var runScene = function(bunnyMesh) {
     gl.frontFace(gl.CCW);
     gl.cullFace(gl.BACK);
 
-    // create shaders
     var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderText);
     var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderText);
 
-    // create program
     var program = createProgram(gl, vertexShader, fragmentShader);
 
-    // create buffers
     var boxVertexBufferObject = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBufferObject);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bunnyMesh.vertices), gl.STATIC_DRAW);
@@ -167,7 +167,8 @@ var runScene = function(bunnyMesh) {
     mat4.identity(identityMatrix);
 
     var angle = 0;
-    var loop = function () {
+    var loop = function () 
+    {
         angle = performance.now() / 1000 / 6 * 2 * Math.PI;
         mat4.rotate(worldMatrix, identityMatrix, angle, [0, 1, 0]);
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
@@ -183,12 +184,14 @@ var runScene = function(bunnyMesh) {
     requestAnimationFrame(loop);
 };
 
-function createShader(gl, type, source) {
+function createShader(gl, type, source) 
+{
     var shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (success) {
+    if (success) 
+    {
         return shader;
     }
 
@@ -196,13 +199,15 @@ function createShader(gl, type, source) {
     gl.deleteShader(shader);
 }
 
-function createProgram(gl, vertexShader, fragmentShader) {
+function createProgram(gl, vertexShader, fragmentShader) 
+{
     var program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
     var success = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (success) {
+    if (success) 
+    {
         return program;
     }
 
@@ -210,11 +215,14 @@ function createProgram(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
 }
 
-function loadBunnyObj(callback) {
+function loadBunnyObj(callback) 
+{
     var request = new XMLHttpRequest();
     request.open("GET", "bunny.obj", true);
-    request.onload = function() {
-        if (request.status == 200 && request.readyState == 4) {
+    request.onload = function() 
+    {
+        if (request.status == 200 && request.readyState == 4) 
+        {
             callback(request.responseText);
         }
     }
@@ -263,7 +271,6 @@ function laplacianFilterStep(network, vertices, indices)
 
     return filteredVertices;
 }
-
 
 function buildNetwork(indices)
 {
