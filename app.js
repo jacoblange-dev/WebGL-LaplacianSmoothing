@@ -34,7 +34,7 @@ void main()
 
     vec3 lightIntensity = ambientLightIntensity + sunlightIntensity * max(dot(fragNormal, sunlightDirection), 0.0);
 
-    gl_FragColor = vec4(color *  lightIntensity, 1.0);
+    gl_FragColor = vec4(color * lightIntensity, 1.0);
 }
 `;
 
@@ -223,7 +223,7 @@ function loadBunnyObj(callback) {
 
 function runSmoothing()
 {
-    bunny.vertices = laplacianFilter(bunny.vertices, bunny.indices, 1);
+    bunny.vertices = laplacianFilter(bunny.vertices, bunny.indices, 10);
     stopDemo = true;
     runScene(bunny);
 }
@@ -232,35 +232,33 @@ function laplacianFilter(vertices, indices, iterations)
 {
     var network = buildNetwork(indices);
 
-    var newVertices = vertices;
     for (var i = 0; i < iterations; i++)
-        newVertices = laplacianFilterStep(network, newVertices, indices);
+        vertices = laplacianFilterStep(network, vertices, indices);
 
-    return newVertices;
+    return vertices;
 }
 
 function laplacianFilterStep(network, vertices, indices)
 {
     var filteredVertices = [];
 
-    var numberOfVertices = vertices.length / 3;
     for (var i = 0; i < vertices.length; i += 3)
     {
         var vertexNumber = i / 3;
         var connections = network[vertexNumber].adjacentIndices;
         var newVertex = vec3.create();
 
-        for (var j = 0; j < connections.length; j++)
+        for (const index of Object.keys(connections))
         {
-            var index = connections[j];
-            var currentVertex = vec3.fromValues(vertices[index], vertices[index + 1], vertices[index + 2]);
+            var currentVertex = vec3.fromValues(vertices[3 * parseInt(index)], vertices[3 * parseInt(index) + 1], vertices[3 * parseInt(index) + 2]);
 
             vec3.add(newVertex, newVertex, currentVertex);
         }
+        var connectionsLength = Object.keys(connections).length;
 
-        filteredVertices[i]     = newVertex[0] / connections.length;
-        filteredVertices[i + 1] = newVertex[1] / connections.length;
-        filteredVertices[i + 2] = newVertex[2] / connections.length;
+        filteredVertices[i]     = newVertex[0] / connectionsLength;
+        filteredVertices[i + 1] = newVertex[1] / connectionsLength;
+        filteredVertices[i + 2] = newVertex[2] / connectionsLength;
     }
 
     return filteredVertices;
@@ -278,22 +276,22 @@ function buildNetwork(indices)
         var indexC = indices[i + 2];
 
         if (!network.hasOwnProperty(indexA))
-            network[indexA] = { adjacentIndices: [] };
+            network[indexA] = { adjacentIndices: {}};
 
         if (!network.hasOwnProperty(indexB))
-            network[indexB] = { adjacentIndices: [] };
+            network[indexB] = { adjacentIndices: {} };
 
         if (!network.hasOwnProperty(indexC))
-            network[indexC] = { adjacentIndices: [] };
+            network[indexC] = { adjacentIndices: {} };
 
-        network[indexA].adjacentIndices.push(indexB);
-        network[indexA].adjacentIndices.push(indexC);
+        network[indexA].adjacentIndices[indexB] = true;
+        network[indexA].adjacentIndices[indexC] = true;
 
-        network[indexB].adjacentIndices.push(indexA);
-        network[indexB].adjacentIndices.push(indexC);
+        network[indexB].adjacentIndices[indexA] = true;
+        network[indexB].adjacentIndices[indexC] = true;
 
-        network[indexC].adjacentIndices.push(indexA);
-        network[indexC].adjacentIndices.push(indexB);
+        network[indexC].adjacentIndices[indexA] = true;
+        network[indexC].adjacentIndices[indexB] = true;
     }
 
     return network;
