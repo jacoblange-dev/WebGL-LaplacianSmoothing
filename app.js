@@ -233,6 +233,7 @@ function runSmoothing()
 {
     bunny.vertices = laplacianFilter(bunny.vertices, bunny.indices, 10);
     stopDemo = true;
+    bunny.normals = recalculateNormals(bunny.vertices, bunny.indices);
     runScene(bunny);
 }
 
@@ -283,11 +284,9 @@ function buildNetwork(indices)
         var indexC = indices[i + 2];
 
         if (!network.hasOwnProperty(indexA))
-            network[indexA] = { adjacentIndices: {}};
-
+            network[indexA] = { adjacentIndices: {} };
         if (!network.hasOwnProperty(indexB))
             network[indexB] = { adjacentIndices: {} };
-
         if (!network.hasOwnProperty(indexC))
             network[indexC] = { adjacentIndices: {} };
 
@@ -302,4 +301,55 @@ function buildNetwork(indices)
     }
 
     return network;
+}
+
+function recalculateNormals(vertices, indices)
+{
+    var faceNormals = {};
+
+    for (var i = 0; i < indices.length; i += 3)
+    {
+        var indexA = indices[i];
+        var indexB = indices[i + 1];
+        var indexC = indices[i + 2];
+
+        var vecA = vec3.fromValues(vertices[3 * indexA], vertices[3 * indexA + 1], vertices[3 * indexA + 2]);
+        var vecB = vec3.fromValues(vertices[3 * indexB], vertices[3 * indexB + 1], vertices[3 * indexB + 2]);
+        var vecC = vec3.fromValues(vertices[3 * indexC], vertices[3 * indexC + 1], vertices[3 * indexC + 2]);
+
+        var edge1 = vec3.create(); var edge2 = vec3.create();
+        vec3.sub(edge1, vecB, vecA);
+        vec3.sub(edge2, vecC, vecA);
+        
+        var normal = vec3.create();
+        vec3.cross(normal, edge1, edge2);
+        vec3.normalize(normal, normal);
+
+        if (!faceNormals.hasOwnProperty(indexA))
+            faceNormals[indexA] = [];
+        if (!faceNormals.hasOwnProperty(indexB))
+            faceNormals[indexB] = [];
+        if (!faceNormals.hasOwnProperty(indexC))
+            faceNormals[indexC] = [];
+        faceNormals[indexA].push(normal);
+        faceNormals[indexB].push(normal);
+        faceNormals[indexC].push(normal);
+    }
+
+    var newNormals = bunny.normals;    
+    for (var index in Object.keys(faceNormals))
+    {
+        var connectedFaceNormals = faceNormals[parseInt(index)];
+
+        var vertexNormal = vec3.create();
+        for (var i = 0; i < connectedFaceNormals.length; i++)
+        {
+            vec3.add(vertexNormal, vertexNormal, connectedFaceNormals[i]);
+        }
+        vec3.normalize(vertexNormal, vertexNormal);
+
+        newNormals[3 * parseInt(index)] = vertexNormal[0]; newNormals[3 * parseInt(index) + 1 ] = vertexNormal[1]; newNormals[3 * parseInt(index) + 2] = vertexNormal[2];
+    }
+    
+    return newNormals;
 }
